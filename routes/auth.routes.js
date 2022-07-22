@@ -9,6 +9,7 @@ const router = express.Router();
 
 router.post('/signup', authController.authSignUp)
 router.post('/login', authController.autLogin)
+
 /*
 // POST /signup  - Creates a new user in the database
 router.post('/signup', (req, res, next) => {

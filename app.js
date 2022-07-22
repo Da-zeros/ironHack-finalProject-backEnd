@@ -19,9 +19,14 @@ app.use("/api/auth", authRouter);
 const projectRouter = require("./routes/project.routes");
 app.use("/api", isAuthenticated, projectRouter);            // <== UPDATE
 
-const taskRouter = require("./routes/task.routes");
-app.use("/api",isAuthenticated, taskRouter);            // <== UPDATE
+const userDashboard = require("./routes/userDashboard.routes");
+app.use("/api",isAuthenticated, userDashboard);            // <== UPDATE
 
+const taskRouter = require("./routes/task.routes");
+app.use("/api",isAuthenticated, taskRouter); 
+
+const chatRouter = require("./routes/chat.routes");
+app.use("/api/chat",isAuthenticated, chatRouter); 
 
 // app.use((req, res, next) => {
 //     // If no routes match, send them the React HTML.
