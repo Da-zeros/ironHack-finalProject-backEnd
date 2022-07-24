@@ -6,6 +6,7 @@ const userSchema = new Schema({
   email: { type: String, unique: true, required: true },
   password: { type: String, required: true },
   name: { type: String, required: true },
+  verified:{type:Boolean, default:false}
 });
 
 userSchema.pre("save", async function() {
@@ -43,14 +44,25 @@ userSchema.statics.createUser = async function(email, name, password){
   }
 } 
 
-userSchema.statics.loginUser = async function(findUserLog, password){
+userSchema.methods.checkPass = function(password){
   
   try{
-      const isSamePassword = await bcrypt.compare(password, findUserLog.password)
+      const isSamePassword = bcrypt.compare(password, this.password)
       
       if (isSamePassword) {
-        return findUserLog
+        return this
       }
+      
+  }catch(Error){
+     console.log(Error)    
+  }
+}
+
+userSchema.methods.checVerify = function(){
+  
+  try{
+      const userVerified = this.verified
+      if (userVerified) return this
       
   }catch(Error){
      console.log(Error)    

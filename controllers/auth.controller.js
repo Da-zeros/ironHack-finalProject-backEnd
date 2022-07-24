@@ -4,6 +4,10 @@ const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 
 
+const {transporter} = require('../config/mail')
+
+
+
 async function  authSignUp(req, res){
     
     const {email,name,password} = req.body;
@@ -34,14 +38,32 @@ async function  authSignUp(req, res){
             return res.status(400).json({message: "User with this email already exists"})
         }
         const user = await User.createUser(email, name, password)
-        
-        if (user) return res.status(200).json({message: 'User created'})
-        else{
-            return res.status(400).json({ message: 'User already exists.' });
 
-        }
-    } catch (error){
         
+        // Genero el token de verificación 
+        const verificationToken = jwt.sign(
+            { ID: user._id },
+            process.env.TOKEN_SECRET,
+            { expiresIn: "1d" }
+        )
+        
+        // Envio el email de confirmación a la cuenta
+        const url = `http://localhost:3000/verify?token=${verificationToken}`
+        
+        
+        await transporter.sendMail({
+            from: "timeswapteam1@gmail.com",
+            to:  email,
+            subject: 'Verifica tu cuenta',
+            html: `
+            <b>Porfavor, presiona <a href ='${url}'>aquí</a> para completar el proceso de verificación.</b>`
+        })
+      
+       return res.status(200).json(user)
+
+
+    } catch (error){
+        console.log(error)
         if (error instanceof mongoose.Error.ValidationError) {
             return res
                 .status(400)
@@ -53,11 +75,84 @@ async function  authSignUp(req, res){
     }
 }
 
-async function autLogin(req, res){
-    console.log("Entra en login")
-    const { email,password } = req.body;
-    console.log(email, password)
+
+async function verify(req, res){
     
+    const { token } = req.params
+    console.log(token)
+    // Checkeo que los parametros del request contengan el token 
+    if (!token) {
+        return res.status(422).send({ 
+            message: "Falta token" 
+        });
+    }
+    // Verifico el token del request con el que tengo en mi archivo .env
+    let payload = null
+
+    try {
+        payload = jwt.verify(
+           token,
+           process.env.TOKEN_SECRET
+        );
+    } catch (err) {
+        return res.status(500).send(err);
+    }
+    try{
+
+        //Compruebo la existencia del usuario con el id que contenga el token
+        const user = await User.findOne({ _id: payload.ID }).exec();
+        if (!user) {
+            console.log('No existe el usuario')
+            return res.status(404).send({ 
+              message: "El usuario no existe" 
+            });
+        }
+        
+        // Cambio el campo de verificado a true
+        user.verified = true;
+        await user.save();
+        
+        return res.status(200).send({
+            message: "El usuario ha sido verificado"
+        });
+    } catch (err) {
+        return res.status(500).send(err);
+    }
+     
+}
+
+async function verifyPass(req, res){
+    console.log(req.params)
+
+    const { token } = req.params
+    
+    // Checkeo que los parametros del request contengan el token 
+    if (!token) {
+        return res.status(422).json({ message: "Falta token"});
+    }
+    // Verifico el token del request con el que tengo en mi archivo .env
+    let payload = null
+
+    try {
+        payload = jwt.verify(
+           token,
+           process.env.TOKEN_SECRET
+        );
+
+        const user = await User.findOne({ _id: payload.ID }).exec();
+
+        if(user) return res.json(user)
+
+    } catch (err) {
+        return res.json({message: err})
+    }
+    
+}
+
+async function autLogin(req, res){
+   
+    const { email,password } = req.body;
+  
     if(validator.isEmpty(email) || validator.isEmpty(password)){
         return res
             .status(400)
@@ -72,12 +167,16 @@ async function autLogin(req, res){
             
             return res.status(400).json({message: "No user with this email"})
         }
+        const userVerified = findUserLog.checVerify()
         
-        const userLoged = await User.loginUser(findUserLog, password)
-        console.log(userLoged)
-       
+        if(!userVerified){
+            return res.status(400).json({message: `Check ${email} to verify your account`})
+        } 
+
+        const userLoged = userVerified.checkPass(password)
+    
         if (!userLoged) return res.status(400).json({message: "Wrong credentials."})
-        
+       
         else{    
             const { _id, email, name } = userLoged;
             const payload = { _id, email, name };
@@ -90,8 +189,54 @@ async function autLogin(req, res){
     }  
 }
 
+async function forgot(req, res, next){
+    
+    const {email} = req.body
+   
+    try {
+        const user = await User.findOne({ email })
+        
+        if(!user) res.json({message: "No user with this email"})
+        
+        else{
+
+         // Genero el token de verificación 
+         const verificationToken = jwt.sign(
+            { ID: user._id },
+            process.env.TOKEN_SECRET,
+            { expiresIn: "1d" }
+        )
+
+        // Envio el email de confirmación a la cuenta
+        const url = `http://localhost:3000/verifyTokenPass?token=${verificationToken}`
+        
+        
+        await transporter.sendMail({
+            from: "timecitizen@gmail.com",
+            to:  email,
+            subject: 'change your password',
+            html: `
+            <b>Porfavor, presiona <a href ='${url}'>aquí</a> modificar tu contraseña.</b>`
+        })
+      
+       return res.status(200).json(user)}
+
+    } catch (err) {
+        console.log(err)
+        next(err)
+    }
+}
+
+async function passwordModify(req, res){
+    console.log(req.body)
+}
+
 module.exports = {
     authSignUp,
-    autLogin
+    autLogin,
+    verify,
+    verifyPass, 
+    forgot,
+    passwordModify
     
 }
