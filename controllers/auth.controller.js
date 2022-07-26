@@ -2,9 +2,10 @@ const User = require('../models/User.model');
 const validator = require('validator');
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
+const bcrypt = require('bcryptjs');
 
-
-const {transporter} = require('../config/mail')
+const {transporter} = require('../config/mail');
+const { json } = require('express');
 
 
 
@@ -79,7 +80,7 @@ async function  authSignUp(req, res){
 async function verify(req, res){
     
     const { token } = req.params
-    console.log(token)
+    console.log("Entra en verify")
     // Checkeo que los parametros del request contengan el token 
     if (!token) {
         return res.status(422).send({ 
@@ -122,7 +123,6 @@ async function verify(req, res){
 }
 
 async function verifyPass(req, res){
-    console.log(req.params)
 
     const { token } = req.params
     
@@ -228,7 +228,24 @@ async function forgot(req, res, next){
 }
 
 async function passwordModify(req, res){
-    console.log(req.body)
+  
+    const {userEmail} = req.body
+    const {password,} = req.body.values
+    
+    try{
+        const salt = await bcrypt.genSalt(10)
+        const hash = await bcrypt.hash(password, salt)
+        
+        const filter = { email: userEmail };
+        const update = { password: hash };
+
+        const user = await User.findOneAndUpdate(filter, update, { new: true })
+        console.log(user)
+        return res.json(user)
+    }
+    catch(err){
+        next(err)
+    }
 }
 
 module.exports = {
