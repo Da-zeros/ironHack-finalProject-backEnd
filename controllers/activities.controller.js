@@ -77,20 +77,39 @@ async function addActivity(req, res, nex){
 async function filteredActivity(req, res, next){
     
     const { filterType, filterWord, filterDate} = req.query
-    
+    console.log("filter",filterType, "filterWord", filterWord, "filterData", filterDate)
     try{
 
         if( filterType !== undefined )
         {
-            let dbResponse = await ActivityType.find({ type: { $in: filterType}})
+            let dbResponse = await Activity.find({ type: filterType})
+            res.json(dbResponse)
         }
         else if( filterWord !== undefined ) 
         {
-    
+            let dbResponse = await Activity.find()
+        
+            let filterList = dbResponse.filter(activity => activity.title.toLowerCase() 
+            .includes(filterWord.toLowerCase()))
+
+            res.json(filterList)
+                
+              
         }
         else if( filterDate !== undefined ) 
         {
-    
+            let dbResponse = await Activity.find()
+            
+            regexp = /^(1[0-2]|0?[1-9])\/(3[01]|[12][0-9]|0?[1-9])\/(?:[0-9]{2})?[0-9]{2}$/;
+           
+        
+            let filterList = dbResponse.filter(activity => {
+                if(activity.data){
+                   return activity
+                }
+            })
+
+            res.json(filterList)
         }
     }
     catch(err){
