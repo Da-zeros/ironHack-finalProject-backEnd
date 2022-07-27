@@ -7,6 +7,7 @@ let ActivitySchema = new Schema({
     description: String,
     type: String,
     date: Date,
+    time: Number,
     notes: String,
     file: String,
     },

@@ -3,6 +3,7 @@ const router = express.Router();
 
 const activitiesController = require('../controllers/activities.controller')
 
+router.get("/activities/", activitiesController.filteredActivity)
 router.post("/activities", activitiesController.addActivity)
 router.get("/activities/type", activitiesController.type)
 
