@@ -14,8 +14,4 @@ let ActivitySchema = new Schema({
     {timestamps:true}
 )
 
-
-let Activity = model("Activity", ActivitySchema)
-
-
-module.exports = Activity
+module.exports = model("Activity", ActivitySchema)

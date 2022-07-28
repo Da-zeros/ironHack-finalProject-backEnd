@@ -5,5 +5,6 @@ const userDashboardController = require('../controllers/userDashboard.controller
 
 
 router.get('/userDashboard',userDashboardController.activities)
+router.put("/userDashboard/:activityId", userDashboardController.addActivity)
 
 module.exports = router;
