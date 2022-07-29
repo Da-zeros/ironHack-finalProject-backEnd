@@ -7,7 +7,11 @@ const userSchema = new Schema({
   password: { type: String, required: true },
   name: { type: String, required: true },
   verified:{type:Boolean, default:false},
-  activities:[{ type: Schema.Types.ObjectId, ref: "Activity" }]
+  activities:[
+    { type: Schema.Types.ObjectId, 
+      ref: 'Activity'
+    }
+    ]
 });
 
 userSchema.pre("save", async function() {

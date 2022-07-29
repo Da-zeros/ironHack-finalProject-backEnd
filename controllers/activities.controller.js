@@ -115,12 +115,49 @@ async function filteredActivity(req, res, next){
     catch(err){
         console.log(err)
     }
-   
+}
+
+async function allActivities(req, res){
+
+    try {
+        const dbResponse = await Activity.find().sort({createdAt:-1}).limit(4);
+        return res.json(dbResponse )
+    } catch (error) {
+        
+    }
+    console.log("Entra en allActivities")
+} 
+
+async function addComment(req, res){
+    console.log(req.body)
+    const { comment } = req.body
+    const { delActivityId } = req.body
+
+    const filter = { _id: delActivityId }
+    const update = { $push: { comment: comment }}
+
+    const dbResponse = await Activity.findByIdAndUpdate( filter, update, { new:true })
+    res.json(dbResponse)
 
 }
+
+
+async function getComment (req, res){
+    try {
+        const dbResponse = await Activity.find({comment:{$exists: true}}).limit(4);
+        return res.json(dbResponse )
+    } catch (error) {
+        
+    }
+    console.log("Entra en allActivities")
+}
+
 
 module.exports = {
     addActivity,
     type,
-    filteredActivity
+    filteredActivity,
+    allActivities,
+    addComment,
+    getComment
 }

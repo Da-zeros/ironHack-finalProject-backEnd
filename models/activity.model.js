@@ -1,4 +1,5 @@
 const { Schema,  model  } = require("mongoose");
+const mongoose = require('mongoose') 
 
 let ActivitySchema = new Schema({
     user: { type: Schema.Types.ObjectId, ref: "User" },
@@ -10,8 +11,11 @@ let ActivitySchema = new Schema({
     time: Number,
     notes: String,
     file: String,
+    comment:[String],
     },
     {timestamps:true}
 )
 
-module.exports = model("Activity", ActivitySchema)
+
+const Activity = mongoose.model("Activity", ActivitySchema)
+module.exports = Activity 

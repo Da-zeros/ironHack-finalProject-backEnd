@@ -3,7 +3,7 @@ const { find } = require('../models/User.model')
 const User = require('../models/User.model')
 const Activity = require ('../models/activity.model');
 
-
+/*
 async function activities(req, res){
     
     try {
@@ -12,7 +12,22 @@ async function activities(req, res){
     } catch (err) {
         res.json(err)
     }
+}*/
+
+async function usrEnrolledActivities(req, res, next){
+   
+    const { _id } = req.payload
+
+    try {
+        const dbResponse = await User.findById(_id).populate('activities')
+        res.json(dbResponse)
+
+    } catch (err) {
+        
+        console.log(err)
+    }
 }
+
 
 async function addActivity(req, res, next){
 
@@ -41,9 +56,6 @@ async function addActivity(req, res, next){
             res.status(400).json( { message: "you are trying to enroll in your activity" } )
         }
         
-        
-        
-        
 
     } catch (err) {
         console.log(err)
@@ -51,8 +63,26 @@ async function addActivity(req, res, next){
     }
 }
 
+async function desEnrolActivity (req, res){ 
+    
+    const { delId } = req.params
+    const { _id } = req.payload
+    
+    try {
+        const filter =  {_id:_id}
+        const update =  { $pull: { activities: delId } }
+        const act = await User.findOneAndUpdate ( filter, update, { new: true })
+        console.log(act)
+        return res.status(200).json({ success: true, act });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: error })
+    }
+}
+
 module.exports = {
-    activities,
-    addActivity
+    //activities,
+    addActivity,
+    usrEnrolledActivities, 
+    desEnrolActivity
     
 }
