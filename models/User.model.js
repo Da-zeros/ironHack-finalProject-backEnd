@@ -49,10 +49,10 @@ userSchema.statics.createUser = async function(email, name, password){
   }
 } 
 
-userSchema.methods.checkPass = function(password){
+userSchema.methods.checkPass =  function (password){
   
   try{
-      const isSamePassword = bcrypt.compare(password, this.password)
+       const  isSamePassword =  bcrypt.compare(password, this.password)
       
       if (isSamePassword) {
         return this
@@ -64,7 +64,7 @@ userSchema.methods.checkPass = function(password){
 }
 
 userSchema.methods.checVerify = function(){
-  
+
   try{
       const userVerified = this.verified
       if (userVerified) return this

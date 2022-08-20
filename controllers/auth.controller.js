@@ -39,23 +39,24 @@ async function  authSignUp(req, res){
             return res.status(400).json({message: "User with this email already exists"})
         }
         const user = await User.createUser(email, name, password)
-
         
-        // Genero el token de verificación 
-        const verificationToken = jwt.sign(
-            { ID: user._id },
-            process.env.TOKEN_SECRET,
-            { expiresIn: "1d" }
-        )
+        const payload = { email };
+ 
+        // Create and sign the token
+        const mailToken = jwt.sign( 
+          payload,
+          process.env.TOKEN_SECRET,
+          { algorithm: 'HS256', expiresIn: "6h" }
+        );
         
         // Envio el email de confirmación a la cuenta
-        const url = `http://localhost:3000/verify?token=${verificationToken}`
+        const url = `http://localhost:3000/verify?token=${mailToken}`
         
         
         await transporter.sendMail({
-            from: "timeswapteam1@gmail.com",
+            from: "timecitizen@gmail.com",
             to:  email,
-            subject: 'Verifica tu cuenta',
+            subject: 'Verify your account',
             html: `
             <b>Porfavor, presiona <a href ='${url}'>aquí</a> para completar el proceso de verificación.</b>`
         })
@@ -80,7 +81,7 @@ async function  authSignUp(req, res){
 async function verify(req, res){
     
     const { token } = req.params
-    console.log("Entra en verify")
+    
     // Checkeo que los parametros del request contengan el token 
     if (!token) {
         return res.status(422).send({ 
@@ -92,18 +93,13 @@ async function verify(req, res){
 
     try {
         payload = jwt.verify(
-           token,
-           process.env.TOKEN_SECRET
+        token,
+        process.env.TOKEN_SECRET
         );
-    } catch (err) {
-        return res.status(500).send(err);
-    }
-    try{
 
-        //Compruebo la existencia del usuario con el id que contenga el token
-        const user = await User.findOne({ _id: payload.ID }).exec();
+        const user = await User.findOne({ email: payload.email })
         if (!user) {
-            console.log('No existe el usuario')
+            
             return res.status(404).send({ 
               message: "El usuario no existe" 
             });
@@ -116,11 +112,17 @@ async function verify(req, res){
         return res.status(200).send({
             message: "El usuario ha sido verificado"
         });
+
     } catch (err) {
         return res.status(500).send(err);
     }
      
 }
+
+function verifyToken(req, res)  {     
+	console.log(`req.payload`, req.payload);
+	res.status(200).json(req.payload);
+  }
 
 async function verifyPass(req, res){
 
@@ -153,6 +155,7 @@ async function autLogin(req, res){
    
     const { email,password } = req.body;
   
+  
     if(validator.isEmpty(email) || validator.isEmpty(password)){
         return res
             .status(400)
@@ -164,24 +167,24 @@ async function autLogin(req, res){
         const findUserLog = await User.findOne({ email })
         
         if(!findUserLog){
-            
+             
             return res.status(400).json({message: "No user with this email"})
         }
         const userVerified = findUserLog.checVerify()
-        
+      
         if(!userVerified){
             return res.status(400).json({message: `Check ${email} to verify your account`})
         } 
-
-        const userLoged = userVerified.checkPass(password)
-    
+        
+        const userLoged = await bcrypt.compare(password, userVerified.password)
+        
         if (!userLoged) return res.status(400).json({message: "Wrong credentials."})
-       
-        else{    
-            const { _id, email, name } = userLoged;
-            const payload = { _id, email, name };
-            const authToken = jwt.sign(payload, process.env.TOKEN_SECRET, { algorithm: 'HS256', expiresIn: '6h' });
-            res.status(200).json({ authToken: authToken });} 
+
+        const { _id,  name } = findUserLog;
+        const payload = { _id, email, name };
+        
+        const authToken = jwt.sign(payload, process.env.TOKEN_SECRET, { algorithm: 'HS256', expiresIn: '6h' });
+        res.status(200).json({ authToken: authToken });
         
     } catch (err) {
         console.log(err);
@@ -252,6 +255,7 @@ module.exports = {
     authSignUp,
     autLogin,
     verify,
+    verifyToken,
     verifyPass, 
     forgot,
     passwordModify
