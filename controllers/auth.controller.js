@@ -50,7 +50,7 @@ async function  authSignUp(req, res){
         );
         
         // Envio el email de confirmación a la cuenta
-        const url = `http://localhost:3000/verify?token=${mailToken}`
+        const url = `${process.env.PRODUCTION_URL}/verify?token=${mailToken}`
         
         
         await transporter.sendMail({
@@ -128,11 +128,10 @@ async function verifyPass(req, res){
 
     const { token } = req.params
     
-    // Checkeo que los parametros del request contengan el token 
     if (!token) {
         return res.status(422).json({ message: "Falta token"});
     }
-    // Verifico el token del request con el que tengo en mi archivo .env
+   
     let payload = null
 
     try {
@@ -141,7 +140,7 @@ async function verifyPass(req, res){
            process.env.TOKEN_SECRET
         );
 
-        const user = await User.findOne({ _id: payload.ID }).exec();
+        const user = await User.findOne({ email: payload.email })
 
         if(user) return res.json(user)
 
@@ -154,7 +153,6 @@ async function verifyPass(req, res){
 async function autLogin(req, res){
    
     const { email,password } = req.body;
-  
   
     if(validator.isEmpty(email) || validator.isEmpty(password)){
         return res
@@ -195,23 +193,24 @@ async function autLogin(req, res){
 async function forgot(req, res, next){
     
     const {email} = req.body
-   
+    
     try {
         const user = await User.findOne({ email })
         
-        if(!user) res.json({message: "No user with this email"})
+        if(!user) return res.status(400).json({message: "No user with this email"})
         
-        else{
-
          // Genero el token de verificación 
-         const verificationToken = jwt.sign(
-            { ID: user._id },
-            process.env.TOKEN_SECRET,
-            { expiresIn: "1d" }
-        )
+         const payload = { email };
+ 
+         // Create and sign the token
+         const forgotPassToken = jwt.sign( 
+           payload,
+           process.env.TOKEN_SECRET,
+           { algorithm: 'HS256', expiresIn: "6h" }
+         );
 
         // Envio el email de confirmación a la cuenta
-        const url = `http://localhost:3000/verifyTokenPass?token=${verificationToken}`
+        const url = `${process.env.PRODUCTION_URL}/verifyTokenPass?token=${forgotPassToken}`
         
         
         await transporter.sendMail({
@@ -222,7 +221,7 @@ async function forgot(req, res, next){
             <b>Porfavor, presiona <a href ='${url}'>aquí</a> modificar tu contraseña.</b>`
         })
       
-       return res.status(200).json(user)}
+       return res.status(200).json(user)
 
     } catch (err) {
         console.log(err)

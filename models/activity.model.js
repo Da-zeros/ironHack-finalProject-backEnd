@@ -2,7 +2,7 @@ const { Schema,  model  } = require("mongoose");
 const mongoose = require('mongoose') 
 
 let ActivitySchema = new Schema({
-    user: { type: Schema.Types.ObjectId, ref: "User" },
+    user: { type: Schema.Types.ObjectId, ref: 'User' },
     title:String,
     location:String,
     description: String,

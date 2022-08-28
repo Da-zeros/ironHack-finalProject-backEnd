@@ -78,39 +78,41 @@ async function filteredActivity(req, res, next){
     
     const { filterType, filterWord, filterDate} = req.query
     console.log("filter",filterType, "filterWord", filterWord, "filterData", filterDate)
+
     try{
+
+        let dbResponse = ""
 
         if( filterType !== undefined )
         {
-            let dbResponse = await Activity.find({ type: filterType})
-            res.json(dbResponse)
+            dbResponse = await Activity.find({ type: filterType})
+            return res.json(dbResponse)
         }
         else if( filterWord !== undefined ) 
         {
-            let dbResponse = await Activity.find()
-        
+            dbResponse = await Activity.find()
+            
             let filterList = dbResponse.filter(activity => activity.title.toLowerCase() 
             .includes(filterWord.toLowerCase()))
-
-            res.json(filterList)
+            
+            if ( filterList.length == 0 ){
+                return res.status(404).json({message:"No match found"})
+            }
+            return res.json(filterList)
                 
-              
         }
         else if( filterDate !== undefined ) 
         {
-            let dbResponse = await Activity.find()
-            
-            regexp = /^(1[0-2]|0?[1-9])\/(3[01]|[12][0-9]|0?[1-9])\/(?:[0-9]{2})?[0-9]{2}$/;
-           
-        
-            let filterList = dbResponse.filter(activity => {
-                if(activity.data){
-                   return activity
-                }
-            })
+    
+            dbResponse = await Activity.find({data:filterDate})
 
-            res.json(filterList)
+            if ( dbResponse.length == 0 ){
+                return res.status(404).json({message:"No match found"})
+            }
+
+            return res.json( dbResponse )
         }
+       
     }
     catch(err){
         console.log(err)
@@ -144,7 +146,7 @@ async function addComment(req, res){
 
 async function getComment (req, res){
     try {
-        const dbResponse = await Activity.find({comment:{$exists: true}}).limit(4);
+        const dbResponse = await Activity.find({comment:{$exists: true}}).populate('user').limit(4);
         return res.json(dbResponse )
     } catch (error) {
         
